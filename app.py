@@ -72,5 +72,27 @@ def speed_port_last(port):
     return response
 
 
+@app.route('/speed/<port>/<id>')
+def speed_port_id(port, pid):
+    try:
+        sqlite_connection = sqlite3.connect('sw.db')
+        sqlite_connection.row_factory = dict_factory
+
+        cursor = sqlite_connection.cursor()
+        q1 = f"SELECT * FROM sw_data WHERE port = 'Gi1/0/{port}' AND id > {pid} ORDER BY timestamp DESC;"
+        cursor.execute(q1)
+        port_speed = cursor.fetchall()
+        cursor.close()
+        sqlite_connection.close()
+
+    except sqlite3.Error as error:
+        port_speed = [f'{error}']
+
+    response = jsonify(port_speed)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+
+    return response
+
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0")
