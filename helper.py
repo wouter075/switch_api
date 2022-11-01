@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 
 import serial
 import sqlite3
@@ -34,59 +35,64 @@ except sqlite3.Error as error:
         print("Error while connecting to sqlite", error)
     exit(1)
 
+while True:
+    now = datetime.now()
 
-# configure the serial connection
-ser = serial.Serial(
-    port='COM3',
-    baudrate=9600,
-    parity=serial.PARITY_NONE,
-    stopbits=serial.STOPBITS_ONE,
-    bytesize=serial.EIGHTBITS,
-)
-ser.flush()
+    ct = now.strftime("%H:%M:%S")
+    # print("Current Time =", current_time)
 
-# does it work?
-if ser.isOpen():
-    if DEBUG:
-        print("Connection open")
-    # disable --More--
-    if DEBUG:
-        print("Setting terminal length to 0")
-    ser.write(b'terminal length 0\r\n')
+    # configure the serial connection
+    ser = serial.Serial(
+        port='COM3',
+        baudrate=9600,
+        parity=serial.PARITY_NONE,
+        stopbits=serial.STOPBITS_ONE,
+        bytesize=serial.EIGHTBITS,
+    )
+    ser.flush()
 
-    # get utilization
-    if DEBUG:
-        print("Request utilization")
-    ser.write(b'sh controllers utilization\r\n')
-    out = ''
-    # ser.flush()
-
-    while True:
-        # read lines
-        out = ser.readline()
+    # does it work?
+    if ser.isOpen():
         if DEBUG:
-            print(out)
+            print("Connection open")
+        # disable --More--
+        if DEBUG:
+            print("Setting terminal length to 0")
+        ser.write(b'terminal length 0\r\n')
 
-        if out.startswith(b'Gi1/0'):
-            # b'Gi1/0/52   \t   0\t\t\t0\r\n'
-            swPort, p2 = out.split(b'   \t   ')
-            swReceive, swSend = p2.split(b'\t\t\t')
-            swPort = swPort.decode()
-            swSend = swSend.replace(b'\r\n', b'').decode()
-            swReceive = swReceive.decode()
+        # get utilization
+        if DEBUG:
+            print("Request utilization")
+        ser.write(b'sh controllers utilization\r\n')
+        out = ''
+        # ser.flush()
+
+        while True:
+            # read lines
+            out = ser.readline()
             if DEBUG:
-                print(f'{swPort}:\t {swReceive}% / {swSend}%')
+                print(out)
 
-            # update database:
-            q2 = f'''INSERT INTO sw_data (port, send, receive) VALUES ("{swPort}", {swSend}, {swReceive})'''
-            cursor.execute(q2)
-            sqliteConnection.commit()
+            if out.startswith(b'Gi1/0'):
+                # b'Gi1/0/52   \t   0\t\t\t0\r\n'
+                swPort, p2 = out.split(b'   \t   ')
+                swReceive, swSend = p2.split(b'\t\t\t')
+                swPort = swPort.decode()
+                swSend = swSend.replace(b'\r\n', b'').decode()
+                swReceive = swReceive.decode()
+                # if DEBUG:
+                print(f'[{ct}] {swPort}:\t {swReceive}% / {swSend}%')
 
-        # exit when all data is received
-        if b'Stack Ring Percentage' in out:
-            ser.close()
-            break
+                # update database:
+                q2 = f'''INSERT INTO sw_data (port, send, receive) VALUES ("{swPort}", {swSend}, {swReceive})'''
+                cursor.execute(q2)
+                sqliteConnection.commit()
 
+            # exit when all data is received
+            if b'Stack Ring Percentage' in out:
+                ser.close()
+                break
+        time.sleep(30)
 
 if sqliteConnection:
     cursor.close()
