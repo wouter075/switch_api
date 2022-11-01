@@ -72,7 +72,7 @@ def speed_port_last(port):
     return response
 
 
-@app.route('/speed/<port>/<id>')
+@app.route('/speed/<port>/<pid>')
 def speed_port_id(port, pid):
     try:
         sqlite_connection = sqlite3.connect('sw.db')
