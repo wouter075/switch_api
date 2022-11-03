@@ -34,6 +34,7 @@ def ports():
 
     return jsonify(all_ports)
 
+
 @app.route('/speed/<port>')
 def speed_port(port):
     try:
@@ -49,6 +50,7 @@ def speed_port(port):
         port_speed = [f'{error}']
 
     return jsonify(port_speed)
+
 
 @app.route('/speed/<port>/last')
 def speed_port_last(port):
