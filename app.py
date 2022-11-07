@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
 import sqlite3
-import collections
+PORT_NAME = 'Gi1/0'
 
 
 def dict_factory(cursor, row):
@@ -40,7 +40,7 @@ def speed_port(port):
     try:
         sqlite_connection = sqlite3.connect('sw.db')
         cursor = sqlite_connection.cursor()
-        q1 = f"SELECT * FROM sw_data WHERE port = 'Gi1/0/{port}' ORDER BY timestamp DESC LIMIT 1;"
+        q1 = f"SELECT * FROM sw_data WHERE port = '{PORT_NAME}/0/{port}' ORDER BY timestamp DESC LIMIT 1;"
         cursor.execute(q1)
         port_speed = cursor.fetchall()
         cursor.close()
@@ -59,8 +59,11 @@ def speed_port_last(port):
         sqlite_connection.row_factory = dict_factory
 
         cursor = sqlite_connection.cursor()
-        q1 = f"SELECT * FROM sw_data WHERE port = 'Gi1/0/{port}' ORDER BY timestamp DESC LIMIT 100;"
-        cursor.execute(q1)
+        port = f'{PORT_NAME}/0/{port}'
+
+        v = (port, )
+        q1 = f"SELECT * FROM sw_data WHERE port = ? ORDER BY timestamp DESC LIMIT 100;"
+        cursor.execute(q1, v)
         port_speed = cursor.fetchall()
         cursor.close()
         sqlite_connection.close()
@@ -81,7 +84,9 @@ def speed_port_id(port, pid):
         sqlite_connection.row_factory = dict_factory
 
         cursor = sqlite_connection.cursor()
-        q1 = f"SELECT * FROM sw_data WHERE port = 'Gi1/0/{port}' AND id > {pid} ORDER BY timestamp DESC;"
+        port = f'{PORT_NAME}/0/{port}'
+        v = (port, pid)
+        q1 = f"SELECT * FROM sw_data WHERE port = ? AND id > ? ORDER BY timestamp DESC;"
         cursor.execute(q1)
         port_speed = cursor.fetchall()
         cursor.close()
