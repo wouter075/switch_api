@@ -20,6 +20,7 @@ def hello_world():  # put application's code here
 
 @app.route('/ports')
 def ports():
+    al = []
     try:
         sqlite_connection = sqlite3.connect('sw.db')
         cursor = sqlite_connection.cursor()
@@ -28,11 +29,16 @@ def ports():
         all_ports = cursor.fetchall()
         cursor.close()
         sqlite_connection.close()
+        for a in all_ports:
+            al.append(a[0].replace(f'{PORT_NAME}/', ''))
 
     except sqlite3.Error as error:
-        all_ports = [f'{error}']
+        al = [f'{error}']
 
-    return jsonify(all_ports)
+    response = jsonify(al)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+
+    return response
 
 
 @app.route('/speed/<port>')
@@ -40,8 +46,11 @@ def speed_port(port):
     try:
         sqlite_connection = sqlite3.connect('sw.db')
         cursor = sqlite_connection.cursor()
-        q1 = f"SELECT * FROM sw_data WHERE port = '{PORT_NAME}/0/{port}' ORDER BY timestamp DESC LIMIT 1;"
-        cursor.execute(q1)
+        port = f'{PORT_NAME}/0/{port}'
+
+        v = (port, )
+        q1 = "SELECT * FROM sw_data WHERE port = ? ORDER BY timestamp DESC LIMIT 1;"
+        cursor.execute(q1, v)
         port_speed = cursor.fetchall()
         cursor.close()
         sqlite_connection.close()
@@ -49,7 +58,10 @@ def speed_port(port):
     except sqlite3.Error as error:
         port_speed = [f'{error}']
 
-    return jsonify(port_speed)
+    response = jsonify(port_speed)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+
+    return response
 
 
 @app.route('/speed/<port>/last')
@@ -87,7 +99,7 @@ def speed_port_id(port, pid):
         port = f'{PORT_NAME}/0/{port}'
         v = (port, pid)
         q1 = f"SELECT * FROM sw_data WHERE port = ? AND id > ? ORDER BY timestamp DESC;"
-        cursor.execute(q1)
+        cursor.execute(q1, v)
         port_speed = cursor.fetchall()
         cursor.close()
         sqlite_connection.close()
