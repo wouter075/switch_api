@@ -110,13 +110,9 @@ while True:
 
         except SerialException as serialError:
             print(f"[Serial] Something went wrong: {serialError}")
+            break
         except sqliteConnection.Error as sqlError:
             print(f"[SQLLite] Something went wrong: {sqlError}")
-        finally:
-            # close connections
-            ser.close()
-            cursor.close()
-            sqliteConnection.close()
             break
 
 
