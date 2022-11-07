@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
 import sqlite3
-PORT_NAME = 'Gi1/0'
+PORT_NAME = 'Gi1/0/'
 
 
 def dict_factory(cursor, row):
@@ -18,7 +18,7 @@ def hello_world():  # put application's code here
     return 'Sorry, no endpoints here.'
 
 
-@app.route('/ports')
+@app.route('/ports/')
 def ports():
     al = []
     try:
@@ -41,64 +41,27 @@ def ports():
     return response
 
 
+@app.route('/speed/<port>/<path:route>')
 @app.route('/speed/<port>')
-def speed_port(port):
+def speed_port_id(port, route=""):
     try:
         sqlite_connection = sqlite3.connect('sw.db')
+        sqlite_connection.row_factory = dict_factory
+
         cursor = sqlite_connection.cursor()
-        port = f'{PORT_NAME}/0/{port}'
+        port = f'{PORT_NAME}{port}'
 
         v = (port, )
         q1 = "SELECT * FROM sw_data WHERE port = ? ORDER BY timestamp DESC LIMIT 1;"
-        cursor.execute(q1, v)
-        port_speed = cursor.fetchall()
-        cursor.close()
-        sqlite_connection.close()
 
-    except sqlite3.Error as error:
-        port_speed = [f'{error}']
+        if route.startswith("last"):
+            v = (port, )
+            q1 = "SELECT * FROM sw_data WHERE port = ? ORDER BY timestamp DESC LIMIT 100;"
 
-    response = jsonify(port_speed)
-    response.headers.add('Access-Control-Allow-Origin', '*')
+        if route.isnumeric():
+            v = (port, route)
+            q1 = "SELECT * FROM sw_data WHERE port = ? AND id > ? ORDER BY timestamp DESC;"
 
-    return response
-
-
-@app.route('/speed/<port>/last')
-def speed_port_last(port):
-    try:
-        sqlite_connection = sqlite3.connect('sw.db')
-        sqlite_connection.row_factory = dict_factory
-
-        cursor = sqlite_connection.cursor()
-        port = f'{PORT_NAME}/0/{port}'
-
-        v = (port, )
-        q1 = f"SELECT * FROM sw_data WHERE port = ? ORDER BY timestamp DESC LIMIT 100;"
-        cursor.execute(q1, v)
-        port_speed = cursor.fetchall()
-        cursor.close()
-        sqlite_connection.close()
-
-    except sqlite3.Error as error:
-        port_speed = [f'{error}']
-
-    response = jsonify(port_speed)
-    response.headers.add('Access-Control-Allow-Origin', '*')
-
-    return response
-
-
-@app.route('/speed/<port>/<pid>')
-def speed_port_id(port, pid):
-    try:
-        sqlite_connection = sqlite3.connect('sw.db')
-        sqlite_connection.row_factory = dict_factory
-
-        cursor = sqlite_connection.cursor()
-        port = f'{PORT_NAME}/0/{port}'
-        v = (port, pid)
-        q1 = f"SELECT * FROM sw_data WHERE port = ? AND id > ? ORDER BY timestamp DESC;"
         cursor.execute(q1, v)
         port_speed = cursor.fetchall()
         cursor.close()
